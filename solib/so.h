@@ -4,6 +4,7 @@
 #include <stack>
 #include <string>
 #include <cassert>
+#include <exception>
 
 namespace so
 {
@@ -75,7 +76,7 @@ namespace so
 	{
 	public:
 		explicit no_argument_exception(char const* _Message)
-			: exception(_Message)
+			: exception()
 		{
 		}
 
@@ -145,7 +146,7 @@ namespace so
 				L"Please check if the parentheses are paired or if the number of parentheses is the same as the number of parameters",
 				_CRT_WIDE(__FILE__), __LINE__);
 #else
-			assert(false)
+			assert(false);
 #endif
 		}
 		return raw_string;
@@ -188,7 +189,7 @@ namespace so
 				L"Please check if the parentheses are paired or if the number of parentheses is the same as the number of parameters",
 				_CRT_WIDE(__FILE__), __LINE__);
 #else
-			assert(false)
+			assert(false);
 #endif
 		}
 		return format(raw_string, args...);
