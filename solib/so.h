@@ -75,7 +75,7 @@ namespace so
 	class no_argument_exception : public std::exception
 	{
 	public:
-		explicit no_argument_exception(char const* _Message)
+		explicit no_argument_exception(char const* message)
 			: exception()
 		{
 		}
