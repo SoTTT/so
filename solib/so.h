@@ -15,6 +15,7 @@ namespace so {
     using std::cout;
     using std::endl;
 
+    inline void void_call() noexcept {}
 
     template<typename T, typename V = void>
     struct is_printable : std::false_type {
@@ -29,20 +30,20 @@ namespace so {
 
     namespace to_string_ns {
         template<typename T, typename char_t>
-        std::basic_string<char_t> to_string(const T &value) {
+        std::basic_string<char_t> to_string(const T &value, const char *format) {
             static_assert(sizeof(char_t) != sizeof(char_t), "This template cannot be instantiated");
             return std::basic_string<char_t>{};
         }
 
 #define TO_STRING_FUNCTIONAL(TYPE) \
                 template <> \
-                inline std::string to_string<TYPE, std::string::value_type>(const TYPE & value) \
+                inline std::string to_string<TYPE, std::string::value_type>(const TYPE & value, const char *format) \
                 {\
                     return std::to_string(value);\
                 }
 
         template<>
-        inline std::string to_string<double, std::string::value_type>(const double &value) {
+        inline std::string to_string<double, std::string::value_type>(const double &value, const char *format) {
             return std::to_string(value);
         }
 
@@ -68,7 +69,7 @@ namespace so {
     };
 
     template<typename T>
-    struct is_to_string_able<T, void_t<decltype(to_string_ns::to_string<T, std::string::value_type>(T())
+    struct is_to_string_able<T, void_t<decltype(to_string_ns::to_string<T, std::string::value_type>(T(), nullptr)
     )>> : std::true_type {
     };
 
@@ -77,11 +78,12 @@ namespace so {
 
     class no_argument_exception : public std::exception {
     public:
-        explicit no_argument_exception(char const *message)
-                : exception() {
-        }
+        no_argument_exception() = default;
 
-        no_argument_exception() : no_argument_exception("have no argument") {
+        const char *message = "can't void_call this function with empty arguments list";
+
+        const char *what() const _GLIBCXX_TXN_SAFE_DYN _GLIBCXX_NOTHROW override {
+            return message;
         }
     };
 
@@ -133,7 +135,7 @@ namespace so {
                : first_left == -1
                  ? false
                  : (begin_of_find_left = first_left + 1, true));
-        begin_of_find_right = first_left + 1;
+        void_call();
         {
             first_right = raw_string.find_first_of("}", begin_of_find_right);
         }
@@ -142,8 +144,9 @@ namespace so {
                : first_right == -1
                  ? false
                  : (begin_of_find_right = first_right + 1, true));
-        if (first_left != -1 && first_right != -1) {
-            raw_string.replace(first_left, first_right - first_left + 1, to_string_ns::to_string<T, char_t>(value));
+        if (first_left != -1 && first_right != -1 && first_left < first_right) {
+            raw_string.replace(first_left, first_right - first_left + 1, to_string_ns::to_string<T, char_t>(value,
+                                                                                                            nullptr));
         } else {
             throw arguments_no_match_exception();
         }
@@ -166,7 +169,7 @@ namespace so {
                : first_left == -1
                  ? false
                  : (begin_of_find_left = first_left + 1, true));
-        begin_of_find_right = first_left + 1;
+        void_call();
         {
             first_right = raw_string.find_first_of("}", begin_of_find_right);
         }
@@ -175,8 +178,9 @@ namespace so {
                : first_right == -1
                  ? false
                  : (begin_of_find_right = first_right + 1, true));
-        if (first_left != -1 && first_right != -1) {
-            raw_string.replace(first_left, first_right - first_left + 1, to_string_ns::to_string<T, char_t>(value));
+        if (first_left != -1 && first_right != -1 && first_left < first_right) {
+            raw_string.replace(first_left, first_right - first_left + 1,
+                               to_string_ns::to_string<T, char_t>(value, nullptr));
         } else {
             throw arguments_no_match_exception();
         }
@@ -192,7 +196,7 @@ namespace so {
         try {
             return format(raw_string, args...);
         }
-        catch (const arguments_no_match_exception& e) {
+        catch (const arguments_no_match_exception &e) {
             throw e;
         }
     }
