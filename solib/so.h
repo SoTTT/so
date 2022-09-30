@@ -122,7 +122,8 @@ namespace so {
     size_t println(T value, Args ... args) noexcept(noexcept(cout << value)) {
         static_assert(is_printable<T>::value, R"(assert: the object of type "T" not override operator "<<")");
         cout << value;
-        return println(args...);
+        println(args...);
+        return sizeof...(args) + 1;
     }
 
     namespace format_impl {
