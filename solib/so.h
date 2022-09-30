@@ -8,14 +8,15 @@
 #include <string>
 #include <cassert>
 #include <exception>
-
+#include <cstring>
+#include <cstdio>
+#include <memory>
+#include <algorithm>
 
 namespace so {
     using std::void_t;
     using std::cout;
     using std::endl;
-
-    inline void void_call() noexcept {}
 
     template<typename T, typename V = void>
     struct is_printable : std::false_type {
@@ -25,12 +26,9 @@ namespace so {
     struct is_printable<T, void_t<decltype(cout << T())>> : std::true_type {
     };
 
-    template<typename T, typename V>
-    constexpr bool is_printable_v = is_printable<T, V>::value;
-
     namespace to_string_ns {
         template<typename T, typename char_t>
-        std::basic_string<char_t> to_string(const T &value, const char *format) {
+        std::basic_string<char_t> to_string(const T &value, const char *format = nullptr) {
             static_assert(sizeof(char_t) != sizeof(char_t), "This template cannot be instantiated");
             return std::basic_string<char_t>{};
         }
@@ -38,13 +36,25 @@ namespace so {
 #define TO_STRING_FUNCTIONAL(TYPE) \
                 template <> \
                 inline std::string to_string<TYPE, std::string::value_type>(const TYPE & value, const char *format) \
-                {\
-                    return std::to_string(value);\
+                {            \
+                    if (format==nullptr)\
+                        return std::to_string(value);\
+                    else {\
+                        auto buffer = new char[100];\
+                        sprintf(buffer, format, value);\
+                        return std::string{buffer};\
+                    }\
                 }
 
         template<>
         inline std::string to_string<double, std::string::value_type>(const double &value, const char *format) {
-            return std::to_string(value);
+            if (format == nullptr)
+                return std::to_string(value);
+            else {
+                auto buffer = new char[100];
+                sprintf(buffer, format, value);
+                return std::string{buffer};
+            }
         }
 
         TO_STRING_FUNCTIONAL(unsigned)
@@ -73,8 +83,6 @@ namespace so {
     )>> : std::true_type {
     };
 
-    template<typename T, typename V>
-    constexpr bool is_to_string_able_v = is_to_string_able<T, V>::value;
 
     class no_argument_exception : public std::exception {
     public:
@@ -82,7 +90,7 @@ namespace so {
 
         const char *message = "can't void_call this function with empty arguments list";
 
-        const char *what() const _GLIBCXX_TXN_SAFE_DYN _GLIBCXX_NOTHROW override {
+        const char *what() const override {
             return message;
         }
     };
@@ -93,14 +101,12 @@ namespace so {
 
         const char *message = "the braces are not match to very argument package";
 
-        const char *what() const _GLIBCXX_TXN_SAFE_DYN _GLIBCXX_NOTHROW override {
+        const char *what() const override {
             return message;
         }
     };
 
-    inline size_t
-
-    println() {
+    inline size_t println() {
         throw no_argument_exception();
     }
 
@@ -118,35 +124,50 @@ namespace so {
         return println(args...);
     }
 
+    std::string take_format_pattern_for_sprintf(const char *format, size_t len) noexcept {
+        if (format == nullptr || len <= 0) {
+            return {};
+        }
+        long position = -1;
+        for (auto i = 0u; i < len; ++i) {
+            if (format[i] == ':')
+                position = static_cast<long>(i);
+        }
+        if (position != -1) {
+            char array[100];
+            std::strcpy(array, format + 1 + position);
+            array[len - position - 2] = '\0';
+            return {array};
+        } else {
+            return {};
+        }
+    }
 
     template<typename char_t, typename T, typename ...Args>
     std::basic_string<char_t> format(std::basic_string<char_t> raw_string, T value) {
-        static_assert(is_to_string_able<T>::value, R"(the type "T" has functional or callable object "to_string<T>")");
-        using std::stack;
+        static_assert(is_to_string_able<T>::value,
+                      R"(the type "T" has functional or callable object "to_string<T>")");
         typename std::basic_string<char_t>::size_type begin_of_find_left = 0;
         typename std::basic_string<char_t>::size_type begin_of_find_right = 0;
         typename std::basic_string<char_t>::size_type first_left = 0;
         typename std::basic_string<char_t>::size_type first_right = 0;
-        {
+        do {
             first_left = raw_string.find_first_of("{", begin_of_find_left);
-        }
-        while (first_left != -1 && (first_left == 0 || raw_string[first_left - 1] != '\\')
-               ? (false)
-               : first_left == -1
-                 ? false
-                 : (begin_of_find_left = first_left + 1, true));
-        void_call();
-        {
+        } while (first_left != -1 &&
+                 (first_left != 0 ? (raw_string[first_left - 1] == '\\' && (begin_of_find_left = first_left + 1, true))
+                                  : false));
+        do {
             first_right = raw_string.find_first_of("}", begin_of_find_right);
-        }
-        while (first_right != -1 && (first_right == 0 || raw_string[first_right - 1] != '\\')
-               ? (false)
-               : first_right == -1
-                 ? false
-                 : (begin_of_find_right = first_right + 1, true));
-        if (first_left != -1 && first_right != -1 && first_left < first_right) {
+        } while (first_right != -1 &&
+                 (first_right != 0 ? (raw_string[first_right - 1] == '\\' &&
+                                      (begin_of_find_right = first_right + 1, true))
+                                   : false));
+        if (first_left != -1 && first_right != -1 && first_left < first_right && raw_string[first_left - 1] != '\\' &&
+            raw_string[first_right - 1] != '\\') {
+            auto format_p = take_format_pattern_for_sprintf(raw_string.c_str() + first_left + 1,
+                                                            first_right - first_left);
             raw_string.replace(first_left, first_right - first_left + 1, to_string_ns::to_string<T, char_t>(value,
-                                                                                                            nullptr));
+                                                                                                            format_p.c_str()));
         } else {
             throw arguments_no_match_exception();
         }
@@ -155,32 +176,28 @@ namespace so {
 
     template<typename char_t, typename T, typename ...Args>
     std::basic_string<char_t> format(std::basic_string<char_t> raw_string, T value, Args ... args) {
-        static_assert(is_to_string_able<T>::value, R"(the type "T" has functional or callable object "to_string<T>")");
-        using std::stack;
+        static_assert(is_to_string_able<T>::value,
+                      R"(the type "T" has functional or callable object "to_string<T>")");
         typename std::basic_string<char_t>::size_type begin_of_find_left = 0;
         typename std::basic_string<char_t>::size_type begin_of_find_right = 0;
         typename std::basic_string<char_t>::size_type first_left = 0;
         typename std::basic_string<char_t>::size_type first_right = 0;
-        {
+        do {
             first_left = raw_string.find_first_of("{", begin_of_find_left);
-        }
-        while (first_left != -1 && (first_left == 0 || raw_string[first_left - 1] != '\\')
-               ? (false)
-               : first_left == -1
-                 ? false
-                 : (begin_of_find_left = first_left + 1, true));
-        void_call();
-        {
+        } while (first_left != -1 &&
+                 (first_left != 0 ? (raw_string[first_left - 1] == '\\' && (begin_of_find_left = first_left + 1, true))
+                                  : false));
+        do {
             first_right = raw_string.find_first_of("}", begin_of_find_right);
-        }
-        while (first_right != -1 && (first_right == 0 || raw_string[first_right - 1] != '\\')
-               ? (false)
-               : first_right == -1
-                 ? false
-                 : (begin_of_find_right = first_right + 1, true));
+        } while (first_right != -1 &&
+                 (first_right != 0 ? (raw_string[first_right - 1] == '\\' &&
+                                      (begin_of_find_right = first_right + 1, true))
+                                   : false));
         if (first_left != -1 && first_right != -1 && first_left < first_right) {
-            raw_string.replace(first_left, first_right - first_left + 1,
-                               to_string_ns::to_string<T, char_t>(value, nullptr));
+            auto format_p = take_format_pattern_for_sprintf(raw_string.c_str() + first_left + 1,
+                                                            first_right - first_left);
+            raw_string.replace(first_left, first_right - first_left + 1, to_string_ns::to_string<T, char_t>(value,
+                                                                                                            format_p.c_str()));
         } else {
             throw arguments_no_match_exception();
         }
@@ -194,7 +211,21 @@ namespace so {
             throw no_argument_exception();
         }
         try {
-            return format(raw_string, args...);
+            auto result_string = format(raw_string, args...);
+            auto check = [&result_string](const typename std::basic_string<char_t>::iterator &iterator) -> bool {
+                return *iterator == '\\' &&
+                       (iterator + 1 != result_string.end() && (*iterator + 1 == '{') || (*iterator + 1 == '}'));
+            };
+            typename std::basic_string<char_t>::size_type it;
+            typename std::basic_string<char_t>::iterator begin = result_string.begin();
+            while ((it = result_string.find_first_of("\\{", 0)) != -1) {
+                result_string.replace(it, 2, {"{"});
+            }
+            while ((it = result_string.find_first_of("\\}", 0)) != -1) {
+                result_string.replace(it, 2, {"}"});
+            }
+            result_string.erase(begin + it, result_string.end());
+            return result_string;
         }
         catch (const arguments_no_match_exception &e) {
             throw e;
