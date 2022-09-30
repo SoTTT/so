@@ -15,11 +15,7 @@ namespace so {
 
 int main(int argc, char *argv[]) {
     A a{};
-    std::string str("\\{:%.3f\\} {:%.12d}");
-    auto s= so::format(str, 1);
+    std::string str("{} {}");
+    auto s = so::format(str, 1, 3.0);
     so::println(s);
-    for (auto c:s){
-        if (c=='\\')
-            so::println(true);
-    }
 }

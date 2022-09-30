@@ -172,8 +172,12 @@ namespace so {
                 raw_string[first_right - 1] != '\\') {
                 auto format_p = take_format_pattern_for_sprintf(raw_string.c_str() + first_left + 1,
                                                                 first_right - first_left);
-                raw_string.replace(first_left, first_right - first_left + 1, to_string_ns::to_string<T, char_t>(value,
-                                                                                                                format_p.c_str()));
+                auto p = format_p.c_str();
+                if (format_p.size() == 0) {
+                    p = nullptr;
+                }
+                raw_string.replace(first_left, first_right - first_left + 1,
+                                   to_string_ns::to_string<T, char_t>(value, p));
             } else {
                 throw arguments_no_match_exception();
             }
@@ -204,8 +208,12 @@ namespace so {
             if (first_left != -1 && first_right != -1 && first_left < first_right) {
                 auto format_p = take_format_pattern_for_sprintf(raw_string.c_str() + first_left + 1,
                                                                 first_right - first_left);
-                raw_string.replace(first_left, first_right - first_left + 1, to_string_ns::to_string<T, char_t>(value,
-                                                                                                                format_p.c_str()));
+                auto p = format_p.c_str();
+                if (format_p.size() == 0) {
+                    p = nullptr;
+                }
+                raw_string.replace(first_left, first_right - first_left + 1,
+                                   to_string_ns::to_string<T, char_t>(value, p));
             } else {
                 throw arguments_no_match_exception();
             }
