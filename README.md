@@ -21,6 +21,13 @@ auto s = so::format(str, 1, 3.0);
 代码展示了一个包含两个花括号对的字符串，在经过format处理后，返回的值是将整形值1和浮点型值3.0替换到第一和第二个花括号处的结果，即：1 3.000000
 两个值均以默认格式转换，要指示字符串格式，可以使用格式说明符指出，由于format内部使用std::sprintf处理有格式说明符时的转换，指示符会被转发给sprintf，可用的指示符与sprintf完全一致，隐式转换和收窄的规则也与sprintf完全一致，format没有处理空格的机制，花括号对中包含无用的空格可能会导致错误；
 
+
+```
+std::string str("{:%.2f}");
+auto s = so::format(str, 2.0);
+```
+浮点数2.0会被格式化成2.00
+
 对于自定义的类型，例如一个类A，要让format可以完成插入，应该为A提供转换函数，自定义类型的基础转换模板定义在so::to_string_ns中：
 
 ```
@@ -48,22 +55,3 @@ auto s = so::format(str, a);
 ```
 s的值为"1234"
 特化必须在so::to_string_ns命名空间中；
-
-
-
-#### 参与贡献
-
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
-
-
-#### 特技
-
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
