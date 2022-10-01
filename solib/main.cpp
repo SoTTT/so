@@ -15,7 +15,7 @@ namespace so {
 
 int main(int argc, char *argv[]) {
     A a{};
-    std::string str("{} {}");
-    auto s = so::format(str, 1, 3.0);
+    std::string str("\\{{:%.2f}\\}");
+    auto s = so::format(str, 2.0);
     so::println(s);
 }
