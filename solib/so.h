@@ -156,18 +156,19 @@ namespace so {
             typename std::basic_string<char_t>::size_type first_right = 0;
             do {
                 first_left = raw_string.find_first_of("{", begin_of_find_left);
-            } while (first_left != -1 &&
+            } while (first_left != std::basic_string<char_t>::npos &&
                      (first_left != 0
                       ? (raw_string[first_left - 1] == '\\' && (begin_of_find_left = first_left + 1, true))
                       : false));
             do {
                 first_right = raw_string.find_first_of("}", begin_of_find_right);
-            } while (first_right != -1 &&
+            } while (first_right != std::basic_string<char_t>::npos &&
                      (first_right != 0
                       ? (raw_string[first_right - 1] == '\\' &&
                          (begin_of_find_right = first_right + 1, true))
                       : false));
-            if (first_left != -1 && first_right != -1 && first_left < first_right && raw_string[first_left - 1] != '\\'
+            if (first_left != std::basic_string<char_t>::npos && first_right != std::basic_string<char_t>::npos &&
+                first_left < first_right && raw_string[first_left - 1] != '\\'
                 &&
                 raw_string[first_right - 1] != '\\') {
                 auto format_p = take_format_pattern_for_sprintf(raw_string.c_str() + first_left + 1,
@@ -194,18 +195,19 @@ namespace so {
             typename std::basic_string<char_t>::size_type first_right = 0;
             do {
                 first_left = raw_string.find_first_of("{", begin_of_find_left);
-            } while (first_left != -1 &&
+            } while (first_left != std::basic_string<char_t>::npos &&
                      (first_left != 0
                       ? (raw_string[first_left - 1] == '\\' && (begin_of_find_left = first_left + 1, true))
                       : false));
             do {
                 first_right = raw_string.find_first_of("}", begin_of_find_right);
-            } while (first_right != -1 &&
+            } while (first_right != std::basic_string<char_t>::npos &&
                      (first_right != 0
                       ? (raw_string[first_right - 1] == '\\' &&
                          (begin_of_find_right = first_right + 1, true))
                       : false));
-            if (first_left != -1 && first_right != -1 && first_left < first_right) {
+            if (first_left != std::basic_string<char_t>::npos && first_right != std::basic_string<char_t>::npos &&
+                first_left < first_right) {
                 auto format_p = take_format_pattern_for_sprintf(raw_string.c_str() + first_left + 1,
                                                                 first_right - first_left);
                 auto p = format_p.c_str();
