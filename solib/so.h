@@ -225,16 +225,12 @@ namespace so {
 
 
     template<typename char_t, typename ...Args>
-    std::basic_string<char_t> format(std::basic_string<char_t> raw_string, Args ... args) {
+    std::basic_string<char_t> format(std::basic_string<char_t>& raw_string, Args ... args) {
         if (sizeof...(args) == 0) {
             throw no_argument_exception();
         }
         try {
             auto result_string = format_impl::format(raw_string, args...);
-            auto check = [&result_string](const typename std::basic_string<char_t>::iterator &iterator) -> bool {
-                return *iterator == '\\' &&
-                       (iterator + 1 != result_string.end() && (*iterator + 1 == '{') || (*iterator + 1 == '}'));
-            };
             typename std::basic_string<char_t>::size_type it;
             typename std::basic_string<char_t>::iterator begin = result_string.begin();
             while (result_string.find("\\{") != std::basic_string<char_t>::npos) {
