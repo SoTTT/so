@@ -231,8 +231,6 @@ namespace so {
         }
         try {
             auto result_string = format_impl::format(raw_string, args...);
-            typename std::basic_string<char_t>::size_type it;
-            typename std::basic_string<char_t>::iterator begin = result_string.begin();
             while (result_string.find("\\{") != std::basic_string<char_t>::npos) {
                 result_string.replace(result_string.find_first_of("\\{"), 2, {"{"});
             }
