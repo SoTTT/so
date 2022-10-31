@@ -13,6 +13,10 @@
 #include <memory>
 #include <algorithm>
 
+#ifndef __cpp_lib_void_t
+template<typename ...> using void_t = void;
+#endif
+
 namespace so {
     using std::void_t;
     using std::cout;
@@ -28,34 +32,56 @@ namespace so {
 
     namespace to_string_ns {
         template<typename T, typename char_t>
-        std::basic_string<char_t> to_string(const T &value, const char *format = nullptr) {
+        std::basic_string<char_t> to_string(const T &value, const char_t *format = nullptr) {
             static_assert(sizeof(char_t) != sizeof(char_t), "This template cannot be instantiated");
             return std::basic_string<char_t>{};
         }
 
 #define TO_STRING_FUNCTIONAL(TYPE) \
                 template <> \
-                inline std::string to_string<TYPE, std::string::value_type>(const TYPE & value, const char *format) \
+                inline std::basic_string<char> \
+                to_string<TYPE, std::basic_string<char>::value_type>(const TYPE & value, const char *format) \
                 {            \
                     if (format==nullptr)\
                         return std::to_string(value);\
                     else {\
                         auto buffer = new char[100];\
                         sprintf(buffer, format, value);\
-                        return std::string{buffer};\
+                        return std::basic_string<char>{buffer};\
                     }\
                 }
 
+#define TO_BASIC_STRING_SELF_FUNCTIONAL(CHAR_TYPE) \
+                template<> \
+                inline std::basic_string<CHAR_TYPE> \
+                to_string<std::basic_string<CHAR_TYPE>, std::basic_string<CHAR_TYPE>::value_type>( \
+                const std::basic_string<CHAR_TYPE> &value,const CHAR_TYPE *format) { \
+                    return value; \
+                }
+
         template<>
-        inline std::string to_string<double, std::string::value_type>(const double &value, const char *format) {
+        inline std::basic_string<wchar_t>
+        to_string<double, std::basic_string<wchar_t>::value_type>(const double &value, const wchar_t *format) {
             if (format == nullptr)
-                return std::to_string(value);
+                return std::to_wstring(value);
             else {
-                auto buffer = new char[100];
-                sprintf(buffer, format, value);
-                return std::string{buffer};
+                auto buffer = new wchar_t[100];
+                swprintf(buffer, 100, format, value);
+                return std::basic_string<wchar_t>{buffer};
             }
         }
+
+        //define basic_string cast template
+
+        TO_BASIC_STRING_SELF_FUNCTIONAL(char)
+
+        TO_BASIC_STRING_SELF_FUNCTIONAL(char16_t)
+
+        TO_BASIC_STRING_SELF_FUNCTIONAL(char32_t)
+
+        TO_BASIC_STRING_SELF_FUNCTIONAL(wchar_t)
+
+        //end define
 
         TO_STRING_FUNCTIONAL(unsigned)
 
@@ -70,6 +96,8 @@ namespace so {
         TO_STRING_FUNCTIONAL(unsigned long long)
 
         TO_STRING_FUNCTIONAL(float)
+
+        TO_STRING_FUNCTIONAL(double)
 
         TO_STRING_FUNCTIONAL(long double)
     }
@@ -225,7 +253,7 @@ namespace so {
 
 
     template<typename char_t, typename ...Args>
-    std::basic_string<char_t> format(std::basic_string<char_t>& raw_string, Args ... args) {
+    std::basic_string<char_t> format(std::basic_string<char_t> &raw_string, Args ... args) {
         if (sizeof...(args) == 0) {
             throw no_argument_exception();
         }
