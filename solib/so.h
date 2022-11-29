@@ -270,6 +270,12 @@ namespace so {
             throw e;
         }
     }
+
+    template<typename char_t, typename ...Args>
+    std::basic_string<char_t> format(const char_t *string, Args ... args) {
+        std::basic_string<char_t> str{string};
+        return format(str, args...);
+    }
 }
 
 #pragma clang diagnostic pop
