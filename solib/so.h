@@ -254,9 +254,8 @@ namespace so {
 
     template<typename char_t, typename ...Args>
     std::basic_string<char_t> format(std::basic_string<char_t> &raw_string, Args ... args) {
-        if (sizeof...(args) == 0) {
-            throw no_argument_exception();
-        }
+        static_assert(sizeof...(args) > 0,
+                      R"(this function must accept at least of argument, please check the arguments list carefully)");
         try {
             auto result_string = format_impl::format(raw_string, args...);
             while (result_string.find("\\{") != std::basic_string<char_t>::npos) {
