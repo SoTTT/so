@@ -112,18 +112,6 @@ namespace so {
     };
 
 
-    class no_argument_exception : public std::exception {
-    public:
-        no_argument_exception() = default;
-
-        const char *message = "can't void_call this function with empty arguments list";
-
-        const char *what() const noexcept override {
-            return message;
-        }
-    };
-
-
     class arguments_no_match_exception : public std::exception {
     public:
         arguments_no_match_exception() = default;
@@ -134,10 +122,6 @@ namespace so {
             return message;
         }
     };
-
-    inline size_t println() {
-        throw no_argument_exception();
-    }
 
     template<typename T>
     size_t println(T value) noexcept(noexcept(cout << value << endl)) {
