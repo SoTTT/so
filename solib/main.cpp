@@ -10,6 +10,8 @@ namespace so {
         std::string to_string<A, std::string::value_type>(const A &value, const char *format) {
             return "1234";
         }
+
+        TO_STRING_FUNCTIONAL_VEC(int)
     }
 }
 

@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <memory>
 #include <algorithm>
+#include <vector>
 
 #ifndef __cpp_lib_void_t
 template<typename ...> using void_t = void;
@@ -29,6 +30,33 @@ namespace so {
     template<typename T>
     struct is_printable<T, void_t<decltype(cout << T())>> : std::true_type {
     };
+
+
+    class arguments_no_match_exception : public std::exception {
+    public:
+        arguments_no_match_exception() = default;
+
+        const char *message = "the braces are not match to very argument package";
+
+        const char *what() const noexcept override {
+            return message;
+        }
+    };
+
+    template<typename T>
+    size_t println(T value) noexcept(noexcept(cout << value << endl)) {
+        static_assert(is_printable<T>::value, R"(assert: the object of type "T" not override operator "<<")");
+        cout << value << endl;
+        return 1;
+    }
+
+    template<typename T, typename ...Args>
+    size_t println(T value, Args ... args) noexcept(noexcept(cout << value)) {
+        static_assert(is_printable<T>::value, R"(assert: the object of type "T" not override operator "<<")");
+        cout << value;
+        println(args...);
+        return sizeof...(args) + 1;
+    }
 
     namespace to_string_ns {
         template<typename T, typename char_t>
@@ -49,7 +77,7 @@ namespace so {
                         sprintf(buffer, format, value);\
                         return std::basic_string<char>{buffer};\
                     }\
-                }
+                }\
 
 #define TO_BASIC_STRING_SELF_FUNCTIONAL(CHAR_TYPE) \
                 template<> \
@@ -57,7 +85,8 @@ namespace so {
                 to_string<std::basic_string<CHAR_TYPE>, std::basic_string<CHAR_TYPE>::value_type>( \
                 const std::basic_string<CHAR_TYPE> &value,const CHAR_TYPE *format) { \
                     return value; \
-                }
+                }\
+
 
         template<>
         inline std::basic_string<wchar_t>
@@ -100,43 +129,30 @@ namespace so {
         TO_STRING_FUNCTIONAL(double)
 
         TO_STRING_FUNCTIONAL(long double)
+
+        template<typename T, typename V = void>
+        struct is_to_string_able : std::false_type {
+        };
+
+        template<typename T>
+        struct is_to_string_able<T, void_t<decltype(to_string<T, std::string::value_type>(T(), nullptr)
+        )>> : std::true_type {
+        };
+
+#define TO_STRING_FUNCTIONAL_VEC(VALUE_TYPE) \
+        template<> \
+        std::basic_string<char> to_string(const std::vector <VALUE_TYPE> &vec, const char *format) { \
+            using item_type = std::remove_reference<std::remove_cv<decltype(vec)>::type>::type::value_type; \
+            auto str = std::basic_string<char>{"vector:["}; \
+            for (auto &item: vec) { \
+                str.append(to_string(item,format).append(";")); \
+            } \
+            str[str.length() - 1] = ']'; \
+            return str; \
+        }\
+
     }
 
-    template<typename T, typename V = void>
-    struct is_to_string_able : std::false_type {
-    };
-
-    template<typename T>
-    struct is_to_string_able<T, void_t<decltype(to_string_ns::to_string<T, std::string::value_type>(T(), nullptr)
-    )>> : std::true_type {
-    };
-
-
-    class arguments_no_match_exception : public std::exception {
-    public:
-        arguments_no_match_exception() = default;
-
-        const char *message = "the braces are not match to very argument package";
-
-        const char *what() const noexcept override {
-            return message;
-        }
-    };
-
-    template<typename T>
-    size_t println(T value) noexcept(noexcept(cout << value << endl)) {
-        static_assert(is_printable<T>::value, R"(assert: the object of type "T" not override operator "<<")");
-        cout << value << endl;
-        return 1;
-    }
-
-    template<typename T, typename ...Args>
-    size_t println(T value, Args ... args) noexcept(noexcept(cout << value)) {
-        static_assert(is_printable<T>::value, R"(assert: the object of type "T" not override operator "<<")");
-        cout << value;
-        println(args...);
-        return sizeof...(args) + 1;
-    }
 
     namespace format_impl {
         std::string take_format_pattern_for_sprintf(const char *format, size_t len) noexcept {
@@ -160,7 +176,7 @@ namespace so {
 
         template<typename char_t, typename T, typename ...Args>
         std::basic_string<char_t> format(std::basic_string<char_t> raw_string, T value) {
-            static_assert(is_to_string_able<T>::value,
+            static_assert(to_string_ns::is_to_string_able<T>::value,
                           R"(the type "T" has functional or callable object "to_string<T>")");
             typename std::basic_string<char_t>::size_type begin_of_find_left = 0;
             typename std::basic_string<char_t>::size_type begin_of_find_right = 0;
@@ -199,7 +215,7 @@ namespace so {
 
         template<typename char_t, typename T, typename ...Args>
         std::basic_string<char_t> format(std::basic_string<char_t> raw_string, T value, Args ... args) {
-            static_assert(is_to_string_able<T>::value,
+            static_assert(to_string_ns::is_to_string_able<T>::value,
                           R"(the type "T" has functional or callable object "to_string<T>")");
             typename std::basic_string<char_t>::size_type begin_of_find_left = 0;
             typename std::basic_string<char_t>::size_type begin_of_find_right = 0;
